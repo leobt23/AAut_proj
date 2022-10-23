@@ -82,7 +82,7 @@ hist = model.fit(datagen.flow(data_xtrain, data_ytrain,
         batch_size=32, subset='validation'), 
         epochs=60)
 
-#val_loss: 0.2537 - val_accuracy: 0.9019
+#loss: 0.2077 - accuracy: 0.9155 - val_loss: 0.3436 - val_accuracy: 0.8615
 
 
 
