@@ -14,7 +14,12 @@ y = np.load("ytrain_Classification1.npy")
 y_df = pd.DataFrame(y)
 
 X = np.reshape(X, (8273, 30, 30, 3)) # 8k images 30x30 with 3 colours
-
+print(X[2])
+"""
+from matplotlib import pyplot as plt
+plt.imshow(X[2], interpolation='nearest')
+plt.show()
+"""
 X = X.reshape((8273,30*30*3))
 kfold = KFold(5)
 
