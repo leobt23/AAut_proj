@@ -74,9 +74,7 @@ datagen.fit(data_xtrain)
 data_ytrain = to_categorical(y)
 
 #Stop training when accuracy has stopped improving
-callback = EarlyStopping(
-  monitor='val_accuracy', min_delta=0.0001,
-  patience=1)
+callback = EarlyStopping(monitor='loss', patience=8, restore_best_weights=True)
 
 
 
@@ -98,13 +96,13 @@ model.add(Dropout(0.25))
 
 model.add(Flatten())
 model.add(Dense(128, activation='relu'))
-model.add(Dropout(0.5))
+model.add(Dropout(0.25))
 model.add(Dense(2, activation='softmax'))
 
 #Compile model
 #ADAM OU SGD
 model.compile(loss='binary_crossentropy',  
-              optimizer = keras.optimizers.Adam(learning_rate=1), #0.0001            
+              optimizer = keras.optimizers.Adam(learning_rate=0.0001),           
               metrics=[custom_f1])
 
               
@@ -116,9 +114,14 @@ model.summary()
 
     
 #Fit model on training data
-hist = model.fit(datagen.flow(data_xtrain, data_ytrain, batch_size=64, 
-subset='training'),validation_data=datagen.flow(data_xtrain, data_ytrain, 
-batch_size=32, subset='validation'), epochs=20)
+"""
+hist = model.fit(datagen.flow(data_xtrain, data_ytrain, batch_size=64, subset='training'), epochs=200, callbacks=callback)
+"""
+#Fit model on training data
+
+hist = model.fit(datagen.flow(X_train, y_train, batch_size=64, 
+subset='training'),validation_data=datagen.flow(X_test, y_test, 
+batch_size=32, subset='validation'), epochs=200, callbacks=callback)
 
 
 #y_predicted = model.predict()
@@ -127,7 +130,7 @@ batch_size=32, subset='validation'), epochs=20)
 
 #Visualize the models accuracy
 
-
+"""
 plt.plot(hist.history['custom_f1'])
 plt.plot(hist.history['val_custom_f1'])
 plt.title('Model Accuracy')
@@ -143,11 +146,8 @@ plt.ylabel('Loss')
 plt.xlabel('Epoch')
 plt.legend(['Train', 'Val'], loc = 'upper right')
 plt.show()
+"""
 
-# Problema dos resultados não estarem balanceados
-# O que é a loss e precision
-# Saber explicar o modelo sequencial
-# Meter modelo a funcionar
-# O softmax e o mini batch entram onde?
-# Fazer DEBUG!!!
-# f1 PODE-se utilizar no model compile e no early stoPPing? Porque fazzer isso? 
+predictionss = model.predict(np.array("Xtest_Classification1.npy"))
+
+np.save('y.npy', predictionss)
