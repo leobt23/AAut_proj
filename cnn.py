@@ -5,11 +5,19 @@ import matplotlib.pyplot as plt
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Convolution2D, MaxPooling2D
-from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.python import keras 
+from keras.utils import to_categorical
+from keras.preprocessing.image import ImageDataGenerator
+from keras.callbacks import EarlyStopping
 from sklearn.metrics import f1_score, precision_score, recall_score
 from sklearn.model_selection import KFold
+from sklearn.model_selection import train_test_split
+import keras.backend as K
+from imblearn.over_sampling import SMOTE
+from tensorflow import keras
+from collections import Counter
+
+
 
 # Step 1 - Get data
 X = np.load("Xtrain_Classification1.npy")
@@ -17,12 +25,34 @@ X_df = pd.DataFrame(X)
 y = np.load("ytrain_Classification1.npy")
 y_df = pd.DataFrame(y)
 
-X = np.reshape(X, (8273, 30, 30, 3)) # 8k images 30x30 with 3 colours
+X, y = SMOTE().fit_resample(X, y)
+
+print("Hi")
+X = np.reshape(X, (10284, 30, 30, 3)) # 8k images 30x30 with 3 colours
 
 # Scale data
 #Change pixels to probabilities between 0 and 1
 data_xtrain = X / 255
 
+def custom_f1(y_true, y_pred):    
+    def recall_m(y_true, y_pred):
+        TP = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+        Positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+        
+        recall = TP / (Positives+K.epsilon())    
+        return recall 
+    
+    
+    def precision_m(y_true, y_pred):
+        TP = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+        Pred_Positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+    
+        precision = TP / (Pred_Positives+K.epsilon())
+        return precision 
+    
+    precision, recall = precision_m(y_true, y_pred), recall_m(y_true, y_pred)
+    
+    return 2*((precision*recall)/(precision+recall+K.epsilon()))
 
 #Data augmentation
 datagen = ImageDataGenerator(
@@ -39,93 +69,69 @@ datagen = ImageDataGenerator(
 datagen.fit(data_xtrain)
 
 
-
-#One hot encoding class variables
+# One hot encoding class variables
+# Otherwise, our machine learning algorithm won’t be able to directly take in that as input.
 data_ytrain = to_categorical(y)
 
-
 #Stop training when accuracy has stopped improving
-callback = EarlyStopping(monitor='val_accuracy', min_delta=0, 
-patience=3, verbose=0, mode='auto', baseline=None, restore_best_weights=True)
+callback = EarlyStopping(
+  monitor='val_accuracy', min_delta=0.0001,
+  patience=1)
 
 
 
-
+# For now, data will be split in this form. After must be used KFold(5) 
+# 80% train and 20% test 
+X_train, X_test, y_train, y_test = train_test_split(data_xtrain, data_ytrain, test_size=0.20)
 #Model architecture
 model = Sequential()
 
 # Convolution - Transform image map in a smaller one
-model.add(Convolution2D(32, (3, 3), 1, activation='relu', input_shape=(30, 30, 3)))
+model.add(Convolution2D(32, (3, 3), activation='relu', input_shape=(30, 30, 3)))
 #For Spatial Invariance
 model.add(MaxPooling2D(pool_size=(2,2)))
-model.add(Convolution2D(128, (3, 3), 1,activation='relu'))
+model.add(Convolution2D(128, (3, 3),activation='relu'))
 model.add(MaxPooling2D(pool_size=(2,2)))
-model.add(Convolution2D(128, (3, 3), 1, activation='relu'))
+model.add(Convolution2D(128, (3, 3), activation='relu'))
 model.add(MaxPooling2D(pool_size=(2,2)))
 model.add(Dropout(0.25))
 
 model.add(Flatten())
 model.add(Dense(128, activation='relu'))
 model.add(Dropout(0.5))
-model.add(Dense(2, activation='sigmoid')) #sigmoid is for binary data
+model.add(Dense(2, activation='softmax'))
 
 #Compile model
-model.compile(loss='binary_crossentropy',  #Even with one hot encoding?
-              optimizer='adam',            #RMSprop? or adam?
-              metrics=['accuracy'])
+#ADAM OU SGD
+model.compile(loss='binary_crossentropy',  
+              optimizer = keras.optimizers.Adam(learning_rate=1), #0.0001            
+              metrics=[custom_f1])
+
+              
 
 model.summary()
 
-array_rec = []
-array_pre = []
-array_f1 = []
 
-n_for_train = int(len(X)*0.9)
-n_of_our_validation = int(len(X)*0.1)
+#kfold = KFold(5)
 
-
-X_1, X_2 = X[:n_for_train], X[n_for_train:]
-y_1, y_2 = y[:n_for_train], X[n_for_train:]
-
-print(len(X_1))
-print(len(X_2))
-print(len(y_1))
-print(len(y_2))
-
-kfold = KFold(5)
-
-for train_index, validate_index in kfold.split(X_1, y_1):
-    X_train, X_validation = X_1[train_index], X_1[validate_index]
-    y_train, y_validation = y_1[train_index], y_1[validate_index]
     
-    #Fit model on training data
-    hist = model.fit(datagen.flow(X_train, y_train, batch_size=64, 
-    subset='training'),validation_data=datagen.flow(X_validation, y_validation, 
-    batch_size=32, subset='validation'), epochs=10)
-
-    y_predicted = model.predict(X_2)
-
-    array_rec.append(precision_score(y_2, y_predicted))
-    array_pre.append(recall_score(y_2, y_predicted))
-    array_f1.append(f1_score(y_2, y_predicted))
-
-    #predict 
+#Fit model on training data
+hist = model.fit(datagen.flow(data_xtrain, data_ytrain, batch_size=64, 
+subset='training'),validation_data=datagen.flow(data_xtrain, data_ytrain, 
+batch_size=32, subset='validation'), epochs=20)
 
 
-#loss: 0.1284 - accuracy: 0.9491 - val_loss: 0.5026 - val_accuracy: 0.8597
-#with less filters
-#loss: 0.2678 - accuracy: 0.8887 - val_loss: 0.3479 - val_accuracy: 0.8501
+#y_predicted = model.predict()
+
+#loss: 0.3230 - custom_f1: 0.8607 - val_loss: 0.3478 - val_custom_f1: 0.8348
 
 #Visualize the models accuracy
 
-print(f"Recall {array_rec}")
-print(f"Precision {array_pre}")
-print(f"F1-score {array_f1}")
 
-plt.plot(hist.history['accuracy'])
-plt.plot(hist.history['val_accuracy'])
+plt.plot(hist.history['custom_f1'])
+plt.plot(hist.history['val_custom_f1'])
 plt.title('Model Accuracy')
-plt.ylabel('Accuracy')
+plt.ylabel('custom_f1')
 plt.xlabel('Epoch')
 plt.legend(['Train', 'Val'], loc = 'lower right')
 plt.show()
@@ -138,3 +144,10 @@ plt.xlabel('Epoch')
 plt.legend(['Train', 'Val'], loc = 'upper right')
 plt.show()
 
+# Problema dos resultados não estarem balanceados
+# O que é a loss e precision
+# Saber explicar o modelo sequencial
+# Meter modelo a funcionar
+# O softmax e o mini batch entram onde?
+# Fazer DEBUG!!!
+# f1 PODE-se utilizar no model compile e no early stoPPing? Porque fazzer isso? 
