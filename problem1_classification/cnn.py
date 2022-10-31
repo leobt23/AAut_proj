@@ -15,19 +15,26 @@ from sklearn.model_selection import train_test_split
 import keras.backend as K
 from imblearn.over_sampling import SMOTE
 from tensorflow import keras
-from collections import Counter
-
 
 
 # Step 1 - Get data
-X = np.load("Xtrain_Classification1.npy")
+X = np.load("problem1_classification/y_final.npy")
 X_df = pd.DataFrame(X)
-y = np.load("ytrain_Classification1.npy")
+y = np.load("problem1_classification/ytrain_Classification1.npy")
 y_df = pd.DataFrame(y)
 
+X_test_class1 = np.load("problem1_classification/Xtest_Classification1.npy")
+"""
+y1 = np.load("y.npy")
+y_df123 = pd.DataFrame(y1)
+df_final = y_df123.drop(0, axis=1)
+
+np_final = df_final.to_numpy()
+
+np.save('y_final.npy', np_final)
+"""
 X, y = SMOTE().fit_resample(X, y)
 
-print("Hi")
 X = np.reshape(X, (10284, 30, 30, 3)) # 8k images 30x30 with 3 colours
 
 # Scale data
@@ -74,9 +81,7 @@ datagen.fit(data_xtrain)
 data_ytrain = to_categorical(y)
 
 #Stop training when accuracy has stopped improving
-callback = EarlyStopping(monitor='loss', patience=8, restore_best_weights=True)
-
-
+callback = EarlyStopping(monitor='val_loss', patience=8, restore_best_weights=True)
 
 # For now, data will be split in this form. After must be used KFold(5) 
 # 80% train and 20% test 
@@ -114,10 +119,11 @@ model.summary()
 
     
 #Fit model on training data
-"""
-hist = model.fit(datagen.flow(data_xtrain, data_ytrain, batch_size=64, subset='training'), epochs=200, callbacks=callback)
-"""
+
+#hist = model.fit(datagen.flow(data_xtrain, data_ytrain, batch_size=64, subset='training'), epochs=200, callbacks=callback)
+
 #Fit model on training data
+
 
 hist = model.fit(datagen.flow(X_train, y_train, batch_size=64, 
 subset='training'),validation_data=datagen.flow(X_test, y_test, 
@@ -132,22 +138,38 @@ batch_size=32, subset='validation'), epochs=200, callbacks=callback)
 
 """
 plt.plot(hist.history['custom_f1'])
-plt.plot(hist.history['val_custom_f1'])
+#plt.plot(hist.history['val_custom_f1'])
 plt.title('Model Accuracy')
 plt.ylabel('custom_f1')
 plt.xlabel('Epoch')
-plt.legend(['Train', 'Val'], loc = 'lower right')
+#plt.legend(['Train', 'Val'], loc = 'lower right')
 plt.show()
 
 plt.plot(hist.history['loss'])
-plt.plot(hist.history['val_loss'])
+#plt.plot(hist.history['val_loss'])
 plt.title('Model Loss')
 plt.ylabel('Loss')
 plt.xlabel('Epoch')
-plt.legend(['Train', 'Val'], loc = 'upper right')
+#plt.legend(['Train', 'Val'], loc = 'upper right')
 plt.show()
+
 """
 
-predictionss = model.predict(np.array("Xtest_Classification1.npy"))
 
-np.save('y.npy', predictionss)
+X_test_class1 = np.load("problem1_classification/Xtest_Classification1.npy")
+X_test_class2 = np.reshape(X_test_class1, (1367, 30, 30, 3)) 
+X_test_class2 = X_test_class2 / 255
+
+predictionss = model.predict(X_test_class2)
+predictionss = np.rint(predictionss)
+
+np.save('problem1_classification/y.npy', predictionss)
+
+
+y1 = np.load("problem1_classification/y.npy")
+y_df123 = pd.DataFrame(y1)
+df_final = y_df123.drop(0, axis=1)
+
+np_final = df_final.to_numpy()
+
+np.save('problem1_classification/y_final.npy', np_final)
