@@ -60,7 +60,7 @@ def y_hot_encoding(y: np.array) -> np.array:
 # Check patience
 def earlystopping():
     #Stop training when accuracy has stopped improving
-    callback = EarlyStopping(monitor='loss', patience=8, restore_best_weights=True)
+    callback = EarlyStopping(monitor='val_loss', patience=8, restore_best_weights=True)
     return callback
 
 def construct_and_fit(X, y, callback, datagen):
@@ -88,7 +88,7 @@ def construct_and_fit(X, y, callback, datagen):
     #ADAM ou Gradient descent?
     #Change metric
     # binary_crossentropy or categorical_crossentropy is the best loss metric for multicalss classification?
-    model.compile(loss='binary_crossentropy',  
+    model.compile(loss='categorical_crossentropy',
                 optimizer = keras.optimizers.Adam(learning_rate=0.001),           
                 metrics=['accuracy'])
 
