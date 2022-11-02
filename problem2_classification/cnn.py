@@ -90,7 +90,7 @@ def construct_and_fit(X, y, callback, datagen):
     # binary_crossentropy or categorical_crossentropy is the best loss metric for multicalss classification?
     model.compile(loss='binary_crossentropy',  
                 optimizer = keras.optimizers.Adam(learning_rate=0.001),           
-                metrics=['accuracy'])
+                metrics=['balanced_accuracy_score'])
 
     model.summary()
         
@@ -108,11 +108,12 @@ def construct_and_fit(X, y, callback, datagen):
 
 #Visualize the models accuracy
 
+"""
 #TODO - Change this params
 def ploting(hist):
-    plt.plot(hist.history['custom_f1'])
+    plt.plot(hist.history['balanced_accuracy_score'])
     #plt.plot(hist.history['val_custom_f1'])
-    plt.title('Model Accuracy')
+    plt.title('Model balanced_accuracy_score')
     plt.ylabel('custom_f1')
     plt.xlabel('Epoch')
     #plt.legend(['Train', 'Val'], loc = 'lower right')
@@ -125,7 +126,7 @@ def ploting(hist):
     plt.xlabel('Epoch')
     #plt.legend(['Train', 'Val'], loc = 'upper right')
     plt.show()
-
+"""
 
 #balanced_accuracy_score(y_val_real, final_predictions_val)
 #accuracy_score(y_val_real, final_predictions_val)
