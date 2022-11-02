@@ -22,6 +22,19 @@ y = np.load("Ytrain_Regression2.npy")
 y_df = pd.DataFrame(y)
 x_test = np.load("Xtest_Regression2.npy")
 
+# Análise dos dados
+data=pd.concat([y_df,X_df.reindex(y_df.index)],axis=1)
+data.set_axis(['Y','X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8', 'X9', 'X10'], axis='columns', inplace=True)
+
+# Set the figure size
+plt.rcParams["figure.figsize"] = [7.50, 3.50]
+plt.rcParams["figure.autolayout"] = True
+
+# Plot the dataframe
+ax = data[['Y','X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8', 'X9', 'X10']].plot(kind='box')
+
+# Save the plot
+plt.savefig('boxplot1.png')
 
 # Identify outliers
 
