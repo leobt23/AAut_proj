@@ -76,26 +76,26 @@ def earlystopping():
 
 def construct_and_fit(X_train_split, X_test_split, y_train_split, y_test_split, callback):
     data_augmentation = keras.Sequential([
-        layers.RandomFlip("horizontal_and_vertical"),
+        #layers.RandomFlip("horizontal_and_vertical"),
         layers.RandomRotation(0.1),
-        layers.RandomZoom(0.1),
+        #layers.RandomZoom(0.1),
         ])
 
-    model = Sequential()
+    model = Sequential([
+        #data_augmentation,
+        layers.Conv2D(32, (2, 2), padding='same', activation='relu'),
+        layers.MaxPooling2D(pool_size=(2,2)),
+        layers.Flatten(),
+        layers.Dense(64, activation='relu'),
+        layers.Dense(64, activation='relu'),
+        layers.Dense(3, activation='softmax')
+    ])
 
-   # model.add(data_augmentation)
-    model.add(Convolution2D(32, (2, 2), padding='same', activation='relu', input_shape=(5, 5, 3)))
-    model.add(MaxPooling2D(pool_size=(2,2)))
-
-    model.add(Flatten())
-    model.add(Dense(64, activation='relu'))
-    model.add(Dense(64, activation='relu'))
-    model.add(Dense(3, activation='softmax'))
 
     model.compile(loss='categorical_crossentropy',
                 optimizer = keras.optimizers.Adam(learning_rate=0.001),           
                 metrics=['accuracy'])
-
+    model.build(input_shape=(None, 5, 5, 3))
     model.summary()
         
     #Fit model on training data
