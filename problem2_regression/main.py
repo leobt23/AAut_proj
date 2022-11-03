@@ -6,13 +6,14 @@ import pandas as pd
 from pandas.plotting import scatter_matrix
 import matplotlib.pyplot as plt
 import scipy.stats as ss
-from pca import pca
+#from pca import pca
 from sklearn.linear_model import RANSACRegressor, LinearRegression, HuberRegressor, Ridge, Lasso
 from sklearn.metrics import mean_squared_error as mse
 from sklearn.model_selection import KFold, LeaveOneOut
 from sklearn.linear_model import LassoCV, RidgeCV
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.model_selection import GridSearchCV
+from matplotlib import pyplot as plt
 
 
 # Step 1 - Get data
@@ -34,7 +35,7 @@ plt.rcParams["figure.autolayout"] = True
 ax = data[['Y','X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8', 'X9', 'X10']].plot(kind='box')
 
 # Save the plot
-plt.savefig('boxplot1.png')
+plt.savefig('boxplot2.png')
 
 # Identify outliers
 
