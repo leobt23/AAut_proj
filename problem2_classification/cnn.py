@@ -1,3 +1,4 @@
+import random
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -10,8 +11,10 @@ from keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 from imblearn.over_sampling import SMOTE
 from tensorflow import keras
-from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import balanced_accuracy_score, confusion_matrix
 from keras import layers
+import tensorflow as tf
+import seaborn as sns
 
 def get_data() -> np.array:
     """Function to get data from numpy file.
@@ -42,7 +45,7 @@ def split_data(X: np.array, y:np.array) -> np.array:
         np.array: y_test_split - Labels for testing.
     """
 
-    X_train_split, X_test_split, y_train_split, y_test_split = train_test_split(X, y, test_size=0.20, random_state=42)  
+    X_train_split, X_test_split, y_train_split, y_test_split = train_test_split(X, y, test_size=0.20, random_state=42, stratify=y)  
 
     return X_train_split, X_test_split, y_train_split, y_test_split 
 
@@ -64,6 +67,8 @@ def oversampling_method(X: np.array, y: np.array) -> np.array:
     return X, y
 
 def scale_data(X_train: np.array, X_test: np.array, n_patches_train: int, n_patches_test: int) -> np.array:
+    """Method to reshape data and and normalize.
+    """
     X_train = np.reshape(X_train, (n_patches_train, 5, 5, 3)) #  5x5 with 3 colours
     X_train = X_train / 255.0
 
@@ -95,6 +100,16 @@ def augmentation(X: np.array) -> np.array:
     """
 
 def y_hot_encoding(y_train_split: np.array, y_test_splity: np.array) -> np.array:
+    """Hot encoding all labels;
+
+    Args:
+        y_train_split (np.array): Label of training;
+        y_test_splity (np.array): Label of testing;
+
+    Returns:
+        np.array: y_train_split - Training array hot encoded;
+        np.array: y_test_splity - Training array hot encoded;
+    """
     y_train_split = to_categorical(y_train_split)
 
     y_test_splity = to_categorical(y_test_splity)
@@ -103,11 +118,30 @@ def y_hot_encoding(y_train_split: np.array, y_test_splity: np.array) -> np.array
 
 # Check patience
 def earlystopping():
-    #Stop training when accuracy has stopped improving
-    callback = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+    """Functiod to do the early stopping.
+
+    Returns:
+        callback: Callback with the earling stopping properties.
+    """
+    callback = EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True)
     return callback
 
-def construct_and_fit(X_train_split, X_test_split, y_train_split, y_test_split, callback):
+def construct_and_fit(X_train_split: np.array, X_test_split: np.array, 
+y_train_split: np.array, y_test_split: np.array, callback):
+    """Contruction of the model and training.
+
+    Args:
+        X_train_split (np.array): Array of training inputs;
+        X_test_split (np.array): Array of testing inputs;
+        y_train_split (np.array): Array of training labels;
+        y_test_split (np.array): Array of testing labels;
+        callback (function): Callback of early stopping;
+
+    Returns:
+        _type_: Sequencial model.
+        _type_: Hitory of model.
+    """
+
     data_augmentation = keras.Sequential([
         #layers.RandomFlip("horizontal_and_vertical"),
         layers.RandomRotation(0.1),
@@ -116,35 +150,47 @@ def construct_and_fit(X_train_split, X_test_split, y_train_split, y_test_split, 
 
     model = Sequential([
         #data_augmentation,
-        layers.Conv2D(32, (2, 2), padding='same', activation='relu'),
+        layers.Conv2D(32, (2, 2), activation='relu'),
+        layers.Dropout(0.1),
+        #layers.MaxPooling2D(pool_size=(2,2)),
+        layers.Conv2D(64, (2, 2), activation='relu', padding="same"),
+        layers.Dropout(0.1),
+        layers.Conv2D(128, (2, 2), activation='relu', padding="same"),
+        layers.Dropout(0.1),
+       # layers.Conv2D(256, (2, 2), activation='relu', padding="same"),
         layers.MaxPooling2D(pool_size=(2,2)),
         layers.Flatten(),
-        layers.Dense(64, activation='relu'),
-        layers.Dense(64, activation='relu'),
+        layers.Dense(128, activation='relu'),
+        #layers.Dense(128, activation='relu'),
+        layers.Dropout(0.1),
         layers.Dense(3, activation='softmax')
     ])
-
-
+#Balanced_accuracy_score: 0.85158162353267  4 conv + 1 dense
+#0.8500139884371984 dropout 0.1  4x1
+# 0.8581425131300677
+    # 4 conv + 2 dense or 3 conv + 2 dense 
     model.compile(loss='categorical_crossentropy',
                 optimizer = keras.optimizers.Adam(learning_rate=0.001),           
                 metrics=['accuracy'])
     model.build(input_shape=(None, 5, 5, 3))
     model.summary()
-        
-    #Fit model on training data
 
-    hist = model.fit(X_train_split, y_train_split,validation_data=(X_test_split, y_test_split), epochs=50, callbacks=callback)
+    hist = model.fit(X_train_split, y_train_split,validation_data=(X_test_split, y_test_split), epochs=100, callbacks=callback)
 
     return model, hist
 
-
-#Balanced_accuracy_score: 0.8450650814662192
+#Balanced_accuracy_score: 0.8759169748885149
 
 #Visualize the models accuracy
 
 
 #TODO - Change this params
 def ploting(hist):
+    """Function to ploting;
+
+    Args:
+        hist (_type_): History of model.
+    """
     plt.plot(hist.history['accuracy'])
     plt.plot(hist.history['val_accuracy'])
     plt.title('Model balanced_accuracy_score')
@@ -160,10 +206,6 @@ def ploting(hist):
     plt.xlabel('Epoch')
     #plt.legend(['Train', 'Val'], loc = 'upper right')
     plt.show()
-
-
-#balanced_accuracy_score(y_val_real, final_predictions_val)
-#accuracy_score(y_val_real, final_predictions_val)
 
 def predict(model, X_test_split, y_test_split):
     X_test = np.reshape(X_test_split, (10140, 5, 5, 3)) 
@@ -187,21 +229,26 @@ def predict(model, X_test_split, y_test_split):
         if(i == 0):
             count0 += 1
 
-    print(f'Balanced_accuracy_score: {balanced_accuracy_score(df_predict, df_y_test)}')
+    cm = confusion_matrix(df_y_test, df_predict)
+    sns.heatmap(cm, annot = True, fmt="d")
+    plt.show()
+    print(f'Balanced_accuracy_score: {balanced_accuracy_score(df_y_test, df_predict)}')
     return prediction
             
 def save_results(prediction: np.array):            
     np.save('y.npy', prediction)
 
-
-
-
 def main():
+    #Seed 
+    tf.random.set_seed(1234)
+    np.random.seed(1234)
+    random.seed(1234)
+
     ### Train
     X, y, X_test = get_data()
     X_train_split, X_test_split, y_train_split, y_test_split = split_data(X,y)
     X_train_split, y_train_split = oversampling_method(X_train_split, y_train_split) 
-    X_train_split, X_test_split = scale_data(X_train_split, X_test_split, n_patches_train = 96981, n_patches_test = 10140) # real number wtout altered data: 50700
+    X_train_split, X_test_split = scale_data(X_train_split, X_test_split, n_patches_train = 97050, n_patches_test = 10140) # real number wtout altered data: 50700
     #X_train_split, datagen = augmentation(X_train_split)
     y_train_split, y_test_split = y_hot_encoding(y_train_split, y_test_split)
     callback = earlystopping()
