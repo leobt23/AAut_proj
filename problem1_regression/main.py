@@ -8,6 +8,7 @@ from sklearn.linear_model import Lasso
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LassoCV, RidgeCV
 from matplotlib import pyplot as plt
+from sklearn.preprocessing import StandardScaler
 
 
 #################################
@@ -38,18 +39,20 @@ ax = data[['Y','X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8', 'X9', 'X10']].plo
 # Save the plot
 plt.savefig('boxplot1.png')
 
-
+X = StandardScaler(with_std=False).fit_transform(X)
+y = StandardScaler(with_std=False).fit_transform(y)
+x_test = StandardScaler(with_std=False).fit_transform(x_test)
 
 
 # Step 2 - Define alphas for Ridge and Lasso:
 
 # Ridge
 ridge=Ridge()
-parameters={'alpha':[0.000000001,0.001,0.05,0.1,0.17,0.18,0.19,0.2,0.3,0.4,1,20]}
+parameters={'alpha':[0.000000001,0.001,0.05,0.1,0.1633066,0.17,0.18,0.19,0.2,0.3,0.4,1,20]}
 ridge_regressor=GridSearchCV(ridge,parameters,scoring='neg_mean_squared_error',cv=5)
 ridge_regressor.fit(X,y)
 print(ridge_regressor.best_params_)
-print(ridge_regressor.best_score_)
+
 alphas = np.linspace(0.15, 0.23, 500)
 regressorL = RidgeCV(alphas=alphas, cv=10)
 regressorL.fit(X, y.ravel())
@@ -62,7 +65,7 @@ parameters={'alpha':[0.000000001,0.00099,0.001,0.0014,0.002,0.003,0.005,0.05,0.1
 lasso_regressor=GridSearchCV(lasso,parameters,scoring='neg_mean_squared_error',cv=5)
 lasso_regressor.fit(X,y)
 print(lasso_regressor.best_params_)
-print(lasso_regressor.best_score_)
+
 alphas = np.linspace(0.0001, 0.004, 500)
 regressorL = LassoCV(alphas=alphas, cv=10)
 regressorL.fit(X, y.ravel())
@@ -90,8 +93,8 @@ outcomes_predicted = [];
 # Selection models 
 kfold = KFold(10)
 linear_regression = LinearRegression()
-ridge = Ridge(alpha = 0.17404809619238476)
-lasso = Lasso(alpha = 0.0019757515030060123)
+ridge = Ridge(alpha = 0.1633066132264529)
+lasso = Lasso(alpha = 0.0007486973947895793)
 poli = LinearRegression()
 
 
@@ -122,7 +125,22 @@ print("SSE Linear Regression:", Average(array_mse_linear_regr))
 print("SSE Ridge:", Average(array_mse_ridge))
 print("SSE Lasso:", Average(array_mse_lasso))
 print("SSE Polin:", Average(array_mse_poli))
+print("SSE Polin array:", array_mse_poli)
 
+# Coefficients of models
+linear_regression = LinearRegression()
+ridge = Ridge(alpha = 0.1633066132264529)
+lasso = Lasso(alpha = 0.0007486973947895793)
+poli = LinearRegression()
+
+np.set_printoptions(precision=3,suppress=True)
+print("linear",linear_regression.fit(X, y).coef_)
+print("ridge",ridge.fit(X, y).coef_)
+print("lasso",lasso.fit(X, y).coef_)
+
+print("linear",linear_regression.fit(X, y).intercept_)
+print("ridge",ridge.fit(X, y).intercept_)
+print("lasso",lasso.fit(X, y).intercept_)
 
 # Step 5 - Deliver results of best Linear Model for the problem
 
