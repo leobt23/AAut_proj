@@ -131,3 +131,9 @@ dmypy.json
 # Numpy files
 *.npy
 .DS_Store
+
+# PNG
+*.png
+
+# Zip
+*.zip
