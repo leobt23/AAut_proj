@@ -9,9 +9,9 @@ from sklearn.naive_bayes import GaussianNB
 
 
 # Step 1 - Get data
-X = np.load("Xtrain_Classification1.npy")
+X = np.load("problem1_classification/Xtrain_Classification1.npy")
 X_df = pd.DataFrame(X)
-y = np.load("ytrain_Classification1.npy")
+y = np.load("problem1_classification/ytrain_Classification1.npy")
 y_df = pd.DataFrame(y)
 
 X = np.reshape(X, (8273, 30, 30, 3)) # 8k images 30x30 with 3 colours
