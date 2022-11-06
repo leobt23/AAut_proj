@@ -14,14 +14,22 @@ from sklearn.linear_model import LassoCV, RidgeCV
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.model_selection import GridSearchCV
 from matplotlib import pyplot as plt
+from sklearn.preprocessing import StandardScaler
+
 
 
 # Step 1 - Get data
 X = np.load("Xtrain_Regression2.npy")
+X = StandardScaler(with_std=False).fit_transform(X)
 X_df = pd.DataFrame(X)
+
 y = np.load("Ytrain_Regression2.npy")
+y = StandardScaler(with_std=False).fit_transform(y)
 y_df = pd.DataFrame(y)
+
 x_test = np.load("Xtest_Regression2.npy")
+x_test = StandardScaler(with_std=False).fit_transform(x_test)
+
 
 # Análise dos dados
 data=pd.concat([y_df,X_df.reindex(y_df.index)],axis=1)
@@ -94,7 +102,53 @@ iqr_outliers = dict(sorted(iqr_outliers.items()))
 #print(f"IQR results: {iqr_outliers}")
 
 ###################################################################################
-# PCA 
+# PCA
+
+def my_pca(X):
+  # returns transformed X, prin components, var explained
+  dim = len(X[0])  # n_cols
+  means = np.mean(X, axis=0)
+  z = X - means  # avoid changing X
+  square_m = np.dot(z.T, z)
+  (evals, evecs) = np.linalg.eig(square_m)
+  trans_x = np.dot(z, evecs[:,0:dim])
+  prin_comp = evecs.T
+  v = np.var(trans_x, axis=0, ddof=1)  # sample var
+  sv = np.sum(v)
+  ve = v / sv
+  # order everything based on variance explained
+  ordering = np.argsort(ve)[::-1]  # sort high to low
+  trans_x = trans_x[:,ordering]
+  prin_comp = prin_comp[ordering,:]
+  ve = ve[ordering]
+  return (trans_x, prin_comp, ve)
+
+def reconstructed(X, n_comp, trans_x, p_comp):
+  means = np.mean(X, axis=0)
+  result = np.dot(trans_x[:,0:n_comp], p_comp[0:n_comp,:])
+  result += means
+  return result
+
+def recon_error(X, XX):
+  diff = X - XX
+  diff_sq = diff * diff
+  errs = np.sum(diff_sq, axis=1)
+  return errs
+
+def main():
+
+  (trans_x, p_comp, ve) = my_pca(X)
+
+  print(ve)
+
+  XX = reconstructed(X, 8, trans_x, p_comp)
+  re = recon_error(X, XX)
+
+  pedro = sorted(range(len(re)), key=lambda i: re[i])[-20:]
+  print(np.sort(pedro))
+
+if __name__ == "__main__":
+  main()
 
 #model = pca(alpha=0.05)
 # Fit transform
@@ -159,6 +213,7 @@ for i in mask_huber:
 print(ransac_outliers)
 ransac_outliers = [15, 18, 24, 29, 30, 33, 36, 47, 48, 62, 63, 65, 71, 72, 83, 88, 93, 95]
 #34 e 70
+print(huber_outliers)
 
 
 #a_file = open("test.txt", "w")
