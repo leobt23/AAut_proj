@@ -6,6 +6,7 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import f1_score
 
 
 # Step 1 - Get data
@@ -27,5 +28,8 @@ model = GaussianNB()
 model.fit(X_train, y_train)
 y_pred = model.predict(X_validation)
 accuracy = accuracy_score(y_validation, y_pred)*100
+f1= f1_score(y_validation, y_pred)
 print(accuracy)
+print(f1)
+
 #print(classification_report(y_validation, model.predict(X_validation), target_names=le.classes_))
